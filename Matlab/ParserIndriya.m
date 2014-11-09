@@ -1,0 +1,336 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Author: Xiaohui Liu (whulxh@gmail.com)
+%   Date:   9/1/2011
+%   Function: parse raw data from Indriya
+%   Attention: MUST remove the table header at first line
+%   [TX/RX; NodeID; SourceID; SeqNum; Last_Hop_Sender; Last_Hop_Ntw_Seq; Last_Hop_MAC_Seq; Local_Ntw_Seq;
+%   Local_MAC_Seq; Timestamp, serial_seqno]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clear
+clc
+
+jobs = [36808];
+multipath = false;
+% ignore the following bcoz deadline already manually set in application
+% for protocols with deadline as parameters, this should be 0
+% otherwise this has to be manually set, like CTP
+deadline = 0;
+parsed = false;
+ROOT_ID = 100;
+
+SRC_CNT = 4;
+results = [];
+
+for job = 1 : length(jobs)
+    job_id = jobs(job);
+    
+    exceptions = [21144];
+    if ~isempty(find(exceptions == job_id, 1))
+        continue;
+    end
+fprintf('processing job %d: ', job_id);
+
+srcDir = '~/Projects/tOR/RawData/Indriya/';
+% srcDir = '~/Downloads/Indriya/';
+dest = [srcDir num2str(job_id)];
+cd(dest);
+output = fopen('output.txt', 'w');
+load 7857.dat;
+t = X7857;
+QUEUE_SIZE = 28;
+compute_path = false;
+
+% deadline = 2000;
+% duration of actual data pkts tx/rx (entire job duration - routing convergence time)
+CONVERGE_TIME = 20;
+duration = 45 - CONVERGE_TIME;    % in minutes
+%% parse
+ENTRY_PER_ROW = 5;
+ENTRY_LEN = 11;
+
+s = zeros(size(t, 1) * ENTRY_PER_ROW, ENTRY_LEN);
+
+for i = 1 : size(t, 1)
+    for j = 1 : ENTRY_PER_ROW
+        s((i - 1) * ENTRY_PER_ROW + j, :) = t(i, (j - 1) * ENTRY_LEN + 1 : j * ENTRY_LEN);
+    end
+end
+% s now stores everything
+
+%% trim into corresponding matrices
+SEND_FAIL_FLAG = 0;
+SEND_FLAG = 1;
+RCV_FLAG = 3;
+INTERCEPT_FLAG = 2;
+
+TX_FLAG = 9;
+RX_FLAG = 10;
+
+
+% packet loss
+SW_FULL_FLAG = 5;
+REJECT_FLAG = 6;
+EXPIRE_FLAG = 11;
+
+DEBUG_FLAG = 255;
+DBG_LOSS_IN_AIR_FLAG = 5;
+%% remove unused entries
+srcPkts = s(s(:, 1) == SEND_FLAG, :);
+srcFailPkts = s(s(:, 1) == SEND_FAIL_FLAG, :);
+intercepts = s(s(:, 1) == INTERCEPT_FLAG, :);
+destPkts = s(s(:, 1) == RCV_FLAG, :);
+
+txs = s(s(:, 1) == TX_FLAG, :);
+rxs = s(s(:, 1) == RX_FLAG, :);
+
+rejs = s(s(:, 1) == REJECT_FLAG, :);
+overflows = s(s(:, 1) == SW_FULL_FLAG, :);
+expires = s(s(:, 1) == EXPIRE_FLAG, :);
+
+debugs = s(s(:, 1) == DEBUG_FLAG, :);
+
+%% uart reliability 
+uart_relis = [];
+nodes = unique(s(:, 2));
+for i = 1 : length(nodes)
+    node = nodes(i);
+    node_uart = s(s(:, 2) == node, :);
+    
+    log_cnts = size(node_uart, 1);
+    req_cnts = node_uart(end, end) + 1;
+    reli = log_cnts / req_cnts;
+    uart_relis = [uart_relis; node, log_cnts, req_cnts, reli];
+end
+%% Transmission_Cost(dest, SRC_ID, ROOT_ID);
+fprintf(output, '\n');
+src_cnt = length(unique(srcPkts(:, 2)));
+fprintf(output, '# of sources: %d\n', src_cnt);
+disp(['# of sources : ' num2str(src_cnt)]);
+% source does not send (probably file empty)
+if src_cnt < SRC_CNT
+    disp(['# of sources less than 10: ' num2str(src_cnt) '!!']);
+end
+
+fprintf(output, 'min uart log reliability: %f\n', min(uart_relis(:, end)));
+% if sendCounts ~= 0
+% end
+nonroot_txs = txs(txs(:, 2) ~= ROOT_ID, :);
+% if rcvCounts ~= 0
+t = destPkts;
+dest_rx_src_cnts = size(unique(t(:, 3 : 4), 'rows'), 1);
+% exclude pkts accepted but not sent
+% t = srcPkts;
+t = txs;
+pkt_sent = unique(t(:, 3 : 4), 'rows');
+src_tx_cnts = size(unique(t(:, 3 : 4), 'rows'), 1);
+reliability = dest_rx_src_cnts / src_tx_cnts;
+tx_cost = size(nonroot_txs, 1) / dest_rx_src_cnts;
+fprintf(output, 'job %d: reliability %f, tx cost %f\n', job_id, reliability, tx_cost);
+% end
+
+t = srcFailPkts;
+% not count unique bcoz seqno does not inc if fails
+app_send_fail_cnts = size(t, 1);
+% app_send_fail_cnts = size(unique(t(:, 3 : 4), 'rows'), 1);
+% app_send_fail_ratio = app_send_fail_cnts / (app_send_fail_cnts + src_tx_cnts);
+fprintf(output, 'app send fail # %f\n', app_send_fail_cnts);
+
+% exclude root since all its pkts are lost in air; root forwards in direct
+% sampling
+t = debugs;
+t = t(t(:, 2) ~= ROOT_ID, :);
+in_air_loss_cnts = size(unique(t(t(:, 3) == DBG_LOSS_IN_AIR_FLAG, [4 10]), 'rows'), 1);
+t = overflows;
+t = t(t(:, 2) ~= ROOT_ID, :);
+t = unique(t(:, 3 : 4), 'rows');
+t = intersect(t, pkt_sent, 'rows');
+overflow_cnts = size(t, 1);
+fprintf(output, 'pkts overflowed: %f, pkts lost in air: %f\n', overflow_cnts / src_tx_cnts, in_air_loss_cnts / src_tx_cnts);
+% whether received pkts are rejected or expire
+t = rejs;
+t = t(t(:, 2) ~= ROOT_ID, :);
+t = unique(t(:, 3 : 4), 'rows');
+t = intersect(t, pkt_sent, 'rows');
+rejected_cnts = size(t, 1);
+
+t = expires;
+t = t(t(:, 2) ~= ROOT_ID, :);
+t = unique(t(:, 3 : 4), 'rows');
+t = intersect(t, pkt_sent, 'rows');
+expired_cnts = size(t, 1);
+% % if backup route used
+% rx_pkts = unique(destPkts(:, 3 : 4), 'rows');
+% rx_not_rejected_pkts = setdiff(rx_pkts, rejected_pkts, 'rows');
+% rx_not_expired_pkts = setdiff(rx_pkts, expired_pkts, 'rows');
+% len = size(rx_pkts, 1);
+% fprintf(output, 'of received packets: %f rejected, %f expired\n\n', 1 - size(rx_not_rejected_pkts, 1) / len, 1 - size(rx_not_expired_pkts, 1) / len);
+% no backup route
+% caution: packets can be rejected and expired and arrived, overflowed or
+% lost in the air more than once bcoz of duplicates
+fprintf(output, 'of packets sent: %f rejected, %f expired\n\n', rejected_cnts / src_tx_cnts, expired_cnts / src_tx_cnts);
+
+% e2e delay from a source
+MAX_E2E_DELAY = 100000;
+t = destPkts;
+% may have duplicates; consider the first arrived copy
+[b m n] = unique(t(:, 3 : 4), 'rows', 'first');
+pkt_delays = t(m, [3 4 10]);
+t = pkt_delays(:, 3);
+invalid_delay_ratio = length(find(t > MAX_E2E_DELAY)) / size(t, 1);
+% if ~isempty(t)
+    fprintf(output, 'invalid delay %f\n', length(find(t > MAX_E2E_DELAY)) / size(t, 1));
+% end
+t = t(t <= MAX_E2E_DELAY);
+if ~isempty(t)
+% if ~parsed
+%     figure;
+%     title_str = 'e2e delay';
+%     title(title_str);
+%     h = plot(t);
+% %     set(h, 'visible', 'off');
+%     saveas(h, title_str, 'fig');
+%     saveas(h, title_str, 'jpg');
+% end
+    if (.9 / reliability) <= 1
+        tmp = quantile(t, .9 / reliability);
+    else
+        % to paste into Google spreadsheet, cannot paste inf
+        tmp = 0;
+    end
+    fprintf(output, 'e2e delay: COV %f, 90 percentile %f, max %f, 90 percentile considering loss %f\n\n', ...
+            std(t) / mean(t), quantile(t, .9), max(t), tmp);
+% end
+% jitter: range, std, COV, SIQR
+jitter = [(max(t) - min(t)) std(t) (std(t) / mean(t)) (quantile(t, .9) - quantile(t, .1)) / 2];
+end
+% deadline catch
+if 0 == deadline
+    deadline = srcPkts(1, 10);
+end
+% catch of received pkts
+dest_deadline_catch_ratio = length(find(t <= deadline)) / length(t);
+% catch of all pkts sent
+deadline_catch_ratio = dest_deadline_catch_ratio * reliability;
+% throughput (pps)
+throughput = dest_rx_src_cnts / duration / 60;
+% total pkt outcome
+pkt_sum = reliability + (overflow_cnts + in_air_loss_cnts + rejected_cnts + expired_cnts) / src_tx_cnts;
+% fprintf('pkt sum is %f\n', pkt_sum);
+% reliability catch_ratio jitter e2e delay (90% / 90% consider loss/max)	invalid delays(%)	tx cost	loss causes(overflow/lost in air) rejected / expired ratio of received pkts
+if ~isempty(t)
+summary_result = [reliability, quantile(t, .9), tmp, max(t), invalid_delay_ratio, tx_cost, ...
+                    [overflow_cnts, in_air_loss_cnts, rejected_cnts, expired_cnts] / src_tx_cnts, ...
+                    dest_deadline_catch_ratio, deadline_catch_ratio, jitter, throughput, min(uart_relis(:, 4)), pkt_sum];
+else
+summary_result = [reliability, 0, 0, 0, invalid_delay_ratio, inf, ...
+                    [overflow_cnts, in_air_loss_cnts, rejected_cnts, expired_cnts] / src_tx_cnts, ...
+                    dest_deadline_catch_ratio, deadline_catch_ratio, [0, 0, 0, 0], 0, min(uart_relis(:, 4)), pkt_sum];    
+end
+                
+%% queueing level
+% forget root
+figure;
+title('queueing level');
+t = txs;
+t = t(t(:, 2) ~= ROOT_ID, :);
+t = t(:, 5);
+fprintf(output, 'queue level abnormal ratio %f\n', length(find(t > QUEUE_SIZE)) / length(t));
+t = t(t <= QUEUE_SIZE);
+queueing_levels = t;
+[n xout] = hist(queueing_levels, QUEUE_SIZE);
+h = bar(xout, n / sum(n));
+saveas(h, 'queueing level', 'fig');
+
+%% paths taken by each packet(tracing from dest)
+if ~isempty(destPkts)
+PARENT_IDX = 10;
+% paths taken by each packet
+% SRC_ID = 76; % 1, 5
+SEQ_IDX = 4;
+% src_seqs = unique(tmp(tmp(:, 2) == SRC_ID & tmp(:, 3) == SRC_ID, SEQ_IDX));
+t = destPkts;
+src_seqs = unique(t(:, 3 : 4), 'rows');
+
+len = size(src_seqs, 1);
+NTW_SIZE = 10;
+pkt_paths = repmat(255, len, NTW_SIZE + 1);
+hop_cnts = repmat(0, len, 1);
+if compute_path
+for i = 1 : len
+    node = src_seqs(i, 1);
+    seq = src_seqs(i, 2);
+    seq_txs = txs(txs(:, SEQ_IDX) == seq, :);
+    hop_cnt = 0;
+    path = node;
+    while node ~= ROOT_ID
+%         fprintf('%d ', node);
+        IX = seq_txs(:, 2) == node;
+        node = mode(seq_txs(IX, PARENT_IDX));
+        hop_cnt = hop_cnt + 1;
+        path = [path node];
+        if hop_cnt >= NTW_SIZE
+            % loop
+            break;
+        end
+    end
+    pkt_paths(i, 1 : (hop_cnt + 1)) = path;
+%     fprintf('%d......\n', node);
+    if (ROOT_ID == node)
+        hop_cnts(i) = hop_cnt;
+    end
+end
+% save('pkt_paths.mat', 'pkt_paths', 'hop_cnts');
+hop_cnts = hop_cnts(hop_cnts > 0);
+[x xout] = hist(hop_cnts);
+h = bar(xout, x/sum(x));
+title('hop counts hist');
+saveas(h, 'hop counts hist', 'fig');
+saveas(h, 'hop counts hist', 'jpg');
+end
+% end
+end
+%% duplicate ratio
+% nodes = unique(rxs(:, 2));
+% dup_ratios = zeros(length(nodes), 3);
+% for i = 1 : length(nodes)
+%     node = nodes(i);
+%     dup_ratio = length(find(rxs(:, 2) == node)) / size(unique(rxs(rxs(:, 2) == node, 3 : 4), 'rows'), 1);
+%     dup_ratios(i, :) = [node length(find(rxs(:, 2) == node)) dup_ratio - 1];
+% end
+% save('dup_ratios.mat', 'dup_ratios');
+%% special case for multipath: one app pkt can be lost bcoz one copy
+% overflow, another loss in air, another expires: just compute each cause
+% weighted by their occurrence so total loss + total reception is 1
+if multipath
+    t = summary_result;
+    loss_ratio = 1 - t(1);
+    loss_sum = sum(t(7:10));
+    for idx = 7 : 10
+        t(idx) = loss_ratio * t(idx) / loss_sum;
+    end
+    summary_result = t;
+end
+
+
+%%
+if isempty(destPkts)
+   hop_cnts = [];
+   pkt_paths = [];
+end
+% fprintf('sent/generated %f\n', size(unique(txs(:, 3 : 4), 'rows'), 1) / size(unique(srcPkts(:, 3 : 4), 'rows'), 1));
+save('TxRx.mat', 'txs', 'rxs', 'debugs', 'intercepts', 'srcPkts', 'srcFailPkts', 'destPkts', 'rejs', 'uart_relis', ...
+      'reliability', 'tx_cost', 'overflows', 'pkt_delays', 'app_send_fail_cnts', 'expires', 'hop_cnts', 'pkt_paths', 'summary_result');
+% close all open files
+fclose('all');
+%clear;
+close all;
+if src_cnt >= SRC_CNT
+    results = [results; job_id summary_result];
+end
+end
+save('results.mat', 'results');
+clear;
+load TxRx.mat;
+openvar('summary_result');
+load results.mat;
+openvar('results');

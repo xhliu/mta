@@ -1,0 +1,22 @@
+COMPONENT=RadioCountToLedsAppC
+CFLAGS    += -I$(TOSDIR)/lib/net -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/chips/cc2420/packet -I$(TOSDIR)/chips/cc2420 -I$(TOSDIR)/lib/printf
+PFLAGS    += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/../apps/RadioCountToLeds
+CFLAGS    += -DCC2420_DEF_RFPOWER=31 #31, 27, 23, 19, 15, 11, 7, 3. 
+CFLAGS    += -DTOSH_DATA_LENGTH=114
+PFLAGS    += -DCC2420_DEF_CHANNEL=26
+PFLAGS    += -DTIMESYNC_RATE=3
+
+BUILD_EXTRA_DEPS = RadioCountMsg.py RadioCountMsg.class
+
+RadioCountMsg.py: RadioCountToLeds.h
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=RadioCountMsg RadioCountToLeds.h radio_count_msg -o $@
+
+RadioCountMsg.class: RadioCountMsg.java
+	javac RadioCountMsg.java
+
+RadioCountMsg.java: RadioCountToLeds.h
+	mig java -target=$(PLATFORM) $(CFLAGS) -java-classname=RadioCountMsg RadioCountToLeds.h radio_count_msg -o $@
+
+
+include $(MAKERULES)
+

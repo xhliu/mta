@@ -1,0 +1,51 @@
+function [ETXDist, Parent] = Dijkstra(lE)
+        S = zeros(0);
+%         ETXDist = repmat(inf, TOTAL_NODES, 1); 
+        Q = [0:TOTAL_NODES - 1];
+        Q = Q';
+        Q = [Q lE(:, BASESTATION+1)];
+        
+        Parent = repmat(NaN, TOTAL_NODES, 1);
+        
+        while ~isempty(Q)
+            % extract min element in Q
+            [minQ, minIndex] = min(Q(:,2));
+            currentNode = Q(minIndex, 1);
+            Q(minIndex, :) = [];
+
+            S = [S ;currentNode minQ];
+%             ETXDist(currentNode + 1) = minQ;
+            
+            neighbors = inboundNb{currentNode + 1};
+            for i = 1 : size(neighbors)
+                relax(neighbors(i), currentNode);
+            end
+        end
+        
+        %sort node ETX pair according to their ETX distance to destination
+        [tmp, IX] = sort(S(:,1));
+        ETXDist = S(IX, :);
+%         ETXDist = S;
+            
+        %% i reach base station via j
+        function f = relax(i , j)
+            indexI = find(Q(:, 1) == i);
+            indexJ = find(S(:, 1) == j);
+            if isempty(indexI)
+                disp('Error: cannot find the element in remaining set Q');
+                return 
+            end
+            if isempty(indexJ)
+                disp('Error: cannot find the element in known set S');
+                return
+            end
+            
+            distI = Q(indexI, 2);
+            distJ = S(indexJ, 2);
+            if distI > distJ + lE(i+1, j+1)
+                Q(indexI, 2) = distJ + lE(i+1, j+1);
+                %update parent
+                Parent(i+1) = j;
+            end
+        end
+    end

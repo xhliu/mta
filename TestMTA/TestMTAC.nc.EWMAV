@@ -1,0 +1,206 @@
+#include <Timer.h>
+#include "TestMTA.h"
+
+module TestMTAC {
+  uses interface Boot;
+  uses interface SplitControl as RadioControl;
+  uses interface StdControl as RoutingControl;
+  uses interface Send;
+  uses interface Leds;
+  uses interface Timer<TMilli>;
+  uses interface RootControl;
+  uses interface Receive;
+  uses interface Intercept;
+#ifndef TOSSIM
+  //uses interface Tsync;            //for timestamp
+  //uses interface OTime as GlobalTimer;
+#endif
+#ifdef FTSP
+    uses interface GlobalTime<TMilli> as GlobalTimer;
+#else
+    uses interface GlobalTimer;
+#endif
+    uses interface UartLog;
+    uses interface Random;
+    uses interface Receive as SyncReceive;
+    uses interface PacketTimeStamp<TMilli,uint32_t>;
+    uses interface Packet as SubPacket;
+}
+implementation {
+  message_t packet;
+  uint16_t seqNum;
+  uint16_t timerFireTimes = 0;
+  bool sendBusy = FALSE;
+  uint32_t period;
+
+//***********    
+//verify EWMA & EWMV
+uint16_t mac_delay_samples[] = {9, 16, 50, 16, 13, 26, 9, 8, 15, 14, 15, 22, 27, 20, 9, 16, 8, 8, 12, 13, 14, 13, 7, 10, 15, 15, 9, 14, 12, 13, 10, 11, 13, 11, 9, 16, 12, 14, 8, 12, 16, 9, 11, 15, 15, 7, 11, 12, 11, 270, 16, 10, 105, 12, 13, 11, 15, 14, 9, 15, 23, 11, 22, 7, 51, 14, 27, 9, 21, 26, 12, 8, 13, 11, 10, 9, 9, 12, 9, 8, 17, 9, 12, 10, 22, 13, 12, 17, 13, 17, 16, 9, 14, 10, 8, 8, 15, 17, 8, 15, 8, 58, 9, 16, 13, 15, 7, 16, 11, 12, 17, 17, 12, 9, 16, 12, 16, 9, 14, 9, 16, 7, 11, 14, 11, 9, 11, 10, 8, 12, 10, 15, 12, 16, 13, 14, 26, 8, 8, 16, 9, 8, 16, 17, 14, 11, 12, 29, 9, 26, 16, 16, 11, 9, 10, 13, 23, 16, 12, 10, 12, 9, 16, 8, 9, 9, 14, 7, 12, 14, 15, 12, 13, 10, 9, 10, 9, 16, 8, 16, 13, 11, 8, 7, 8, 14, 14, 10, 12, 16, 8, 16, 12, 15, 15, 17, 14, 16, 9, 10, 14, 11, 14, 9, 16, 11, 14, 7, 16, 14, 16, 15, 15, 8, 13, 9, 9, 13, 16, 10, 50, 12, 12, 10, 11, 12, 12, 13, 18, 16, 11, 12, 8, 10, 16, 10, 21, 8, 13, 13, 10, 12, 9, 13, 10, 12, 7, 16, 11, 15, 10, 9, 10, 15, 11, 11, 15, 10, 10, 16, 16, 12, 10, 8, 14, 13, 11, 17, 8, 14, 12, 15, 15, 14, 8, 9, 23, 12, 10, 10, 9, 15, 15, 156, 113, 10, 15, 23, 11, 12, 198, 9, 9, 11, 18, 9, 9, 59, 52, 13, 12, 11, 17, 9, 7, 12, 7, 12, 7, 8, 13, 11, 12, 14, 12, 8, 15, 15, 21, 14, 16, 11, 17, 9, 11, 15, 15, 13, 14, 12, 11, 16, 11, 15, 12, 15, 11, 13, 12, 16, 8, 12, 10, 8, 12, 13, 27, 9, 16, 13, 9, 14, 9, 9, 12, 8, 20, 16, 17, 13, 10, 8, 15, 12, 7, 12, 27, 13, 13, 11, 13, 9, 8, 16, 23, 12, 11, 8, 16, 16, 14, 11, 15, 15, 8, 8, 14, 12, 10, 16, 13, 16, 11, 12, 10, 10, 13, 12, 8, 10, 16, 7, 13, 14, 8, 7, 14, 12, 15, 9, 8, 12, 7, 9, 9, 16, 11, 11, 16, 8, 8, 16, 17, 14, 17, 9, 15, 15, 8, 17, 17, 10, 14, 11, 16, 9, 14, 16, 15, 15, 16, 14, 15, 15, 15, 15, 13, 14, 15, 15, 14, 23, 13, 7, 14, 15, 15, 15, 14, 9, 12, 11, 10, 15, 15, 10, 11, 10, 21, 8, 12, 16, 10, 11, 10, 9, 12, 12, 14, 7, 13, 11, 14, 11, 11, 10, 11, 12, 8, 14, 13, 11, 9, 10, 14, 15, 16, 12, 9, 16, 14, 15, 15, 13, 11, 343, 11, 8, 11, 18, 381, 16, 15, 12, 12, 12, 15, 9, 15, 14, 14, 9, 57, 9, 7, 15, 15, 11, 12, 9, 10, 15, 9, 14, 15, 10, 12, 12, 13, 9, 12, 17, 14, 16, 7, 9, 155, 12, 10, 273, 90, 9, 15, 48, 155, 10, 13, 23, 10, 11, 88, 9};
+uint32_t mac_delay_mean_u = 0;
+uint32_t mac_delay_var_u = 0;
+int32_t mac_delay_mean, mac_delay_var, diff, incr, tmp;
+	
+void EWMAV() {
+    if (timerFireTimes >= sizeof(mac_delay_samples) / sizeof(mac_delay_samples[0]))
+        return;
+    mac_delay_mean = (int32_t)mac_delay_mean_u;
+    mac_delay_var = (int32_t)mac_delay_var_u;
+    
+	diff = mac_delay_samples[timerFireTimes] - mac_delay_mean;
+	incr = diff >> 3;
+	mac_delay_mean += incr;
+	tmp = mac_delay_var + diff * incr;
+	mac_delay_var = tmp - (tmp >> 3);
+	
+	mac_delay_mean_u = mac_delay_mean;
+    mac_delay_var_u = mac_delay_var;
+    call UartLog.logEntry(DBG_FLAG, DBG_SYNC_FLAG, mac_delay_mean_u, mac_delay_var_u);
+}
+//***********
+
+  bool isSender(uint16_t nodeId) {
+  	uint8_t i;
+  	uint16_t senderSet[] = {71}; //{5} Motelab {31} NetEye
+/*
+    //farthest 3 * 3
+	uint16_t senderSet[] = {91, 92, 93,
+	                        76, 77, 79,
+	                        61, 62, 63,
+	                        };
+*/
+    for (i = 0; i < sizeof(senderSet) / sizeof(senderSet[0]); i++) {
+  		if (senderSet[i] == nodeId)
+  			return TRUE;
+  	}
+  	return FALSE;
+  }
+  
+  event void Boot.booted() {
+    seqNum = 0;
+    call RadioControl.start();
+//     if (isSender(TOS_NODE_ID)) {
+//         //if (TOS_NODE_ID == 1)
+    //period = SRC_PERIOD;
+//         //else
+//         //    period = 50;
+//     } else
+//         period = NON_SRC_PERIOD;
+    dbg("CTP", "%d\n", call Send.maxPayloadLength());
+}
+
+
+  
+  event void RadioControl.startDone(error_t err) {
+    if (err != SUCCESS)
+      call RadioControl.start();
+    else {
+      call RoutingControl.start();
+      //call Timer.startOneShot(NODES_BOOTUP_TIME);
+      call Timer.startPeriodic(50);
+    }
+  }
+
+  event void RadioControl.stopDone(error_t err) {}
+
+  void sendMessage() {
+    error_t is_synced;
+    uint32_t globalTime;
+     EasyCollectionMsg* msg =
+      (EasyCollectionMsg*)call Send.getPayload(&packet, sizeof(EasyCollectionMsg));
+    msg->nodeId = TOS_NODE_ID;
+    msg->seq = seqNum++;
+    //msg->timestamp = call GlobalTimer.getGlobalTime();
+    is_synced = call GlobalTimer.getGlobalTime(&globalTime);
+    if (call Send.send(&packet, sizeof(EasyCollectionMsg)) != SUCCESS)  {
+      call Leds.led0On();
+      call UartLog.logEntry(SEND_FAIL_FLAG, msg->nodeId, msg->seq, globalTime);
+    } else {
+      sendBusy = TRUE;
+      call UartLog.logTxRx(SEND_FLAG, msg->nodeId, msg->seq, is_synced, 0, 0, 0, 0, globalTime);
+    }
+  }
+  
+  
+  event void Timer.fired() {
+	    EWMAV();
+//     uint16_t r;
+// 	switch (timerFireTimes) {
+//         case 0:	
+//             //turn on protocol
+//             call RoutingControl.start();
+//             if (TOS_NODE_ID == ROOT_NODE_ID) {
+//                 //after a node is set root; it will initialize all related metrics
+//                 call RootControl.setRoot();
+//                 dbg("tORtest", "%d is root \n", ROOT_NODE_ID);
+//             } else {
+//                 if (isSender(TOS_NODE_ID))
+//                     call Timer.startOneShot(CONVERGE_TIME);
+//             }
+//             break;
+//         case 1:
+//             period = SRC_PERIOD;
+//             call Timer.startOneShot(period);
+//             break;
+//         default:
+// 		 if (!sendBusy)
+// 			sendMessage();
+// 		//call Timer.startOneShot(period);
+//         r = 2 * (period - MIN_PERIOD);
+//         r = call Random.rand16() % r;
+//         call Timer.startOneShot(r + MIN_PERIOD);
+//	}
+	  timerFireTimes++;
+	  //call UartLog.logEntry(255, seqNum, 0, 0);
+  }
+  
+  event void Send.sendDone(message_t* m, error_t err) {
+    if (err != SUCCESS)
+      call Leds.led0On();
+    sendBusy = FALSE;
+  }
+  
+  event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
+    error_t is_synced;
+    uint32_t globalTime;
+    EasyCollectionMsg* m =
+      (EasyCollectionMsg*)call Send.getPayload(msg, sizeof(EasyCollectionMsg));
+    //uint32_t globalTime = call GlobalTimer.getGlobalTime();
+    /*
+    if (globalTime > m->timestamp)
+        call UartLog.logEntry(RECEIVE_FLAG, m->nodeId, m->seq, globalTime - m->timestamp);
+    else
+        call UartLog.logEntry(RECEIVE_FLAG, m->nodeId, m->seq, 0xFFFFFFFF);
+    */
+    is_synced = call GlobalTimer.getGlobalTime(&globalTime);
+    call UartLog.logTxRx(RECEIVE_FLAG, m->nodeId, m->seq, is_synced, 0, 0, 0, 0, globalTime);
+    return msg;
+  }
+  
+  event bool Intercept.forward(message_t *msg, void *payload, uint8_t len) {
+  	error_t is_synced;
+  	uint32_t globalTime;
+  	EasyCollectionMsg* m =
+      (EasyCollectionMsg*)call Send.getPayload(msg, sizeof(EasyCollectionMsg));
+  	dbg("tORtest", "%s: packet %u intercepted from %u \n", __FUNCTION__, m->seq, m->nodeId);
+    is_synced = call GlobalTimer.getGlobalTime(&globalTime);
+    call UartLog.logTxRx(INTERCEPT_FLAG, m->nodeId, m->seq, is_synced, 0, 0, 0, 0, globalTime);
+    
+    //begin jamming
+//     if (isSender(m->nodeId) && m->seq > BOOTSTRAP_PKT_NUM && m->seq < (BOOTSTRAP_PKT_NUM + 3)) {
+//         period = SRC_PERIOD >> 4;
+//         call Timer.startOneShot(0);
+//     }
+    return TRUE;
+   }
+   
+   
+   //receive sync time
+event message_t* SyncReceive.receive(message_t* msg, void* payload, uint8_t len) {
+    uint32_t local_rx_timestamp = call PacketTimeStamp.timestamp(msg);
+    uint32_t global_rx_timestamp = local_rx_timestamp;
+    error_t is_synced = call GlobalTimer.local2Global(&global_rx_timestamp);
+    sync_header_t *hdr = (sync_header_t*) call SubPacket.getPayload(msg, sizeof(sync_header_t));
+    call UartLog.logTxRx(255, 18, call PacketTimeStamp.isValid(msg), hdr->seqno, is_synced, 0, 0, 0, global_rx_timestamp);
+    return msg;
+}
+  }

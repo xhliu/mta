@@ -1,0 +1,9 @@
+%% analyze all kinds of delay estimated
+%%  retx timeout
+%[retxtime - 2; current turn round time estimation]
+timeouts = Packet_Log(find(Packet_Log(:, 1) == 15), 3:4);
+
+%%  queueing delay
+% [current queue delay estimation; delay sample]
+queueDelays = Packet_Log(find(Packet_Log(:, 1) == 12), 3:4);
+meanDelay = mean(queueDelays(:, 2));

@@ -1,0 +1,29 @@
+metrics = [];
+
+for i = 1 : size(beacons, 1)
+    beacon = beacons{i};
+   if ~isempty(beacon) 
+%        if ~isempty(find(beacons{i}(:, 3) > 0 & beacons{i}(:, 3) < 65535))
+           disp(['node '  num2str(i - 1)]);
+%        end
+       %sendIX = find(beacon(:, 1) == 21);
+       sendIX = find(beacon(:, 1) == 18 | beacon(:, 1) == 19);
+%        sendIX = find(beacon(:, 1) == 20 | beacon(:, 1) == 21);
+       sendIX = find(beacon(:, 1) >= 22 | beacon(:, 1) <= 24);
+       metrics = [metrics; [repmat(i - 1, length(sendIX), 1), beacon(sendIX, :)]];
+   end
+end
+beaconsRcv = metrics;
+% inTableNBs = metrics;
+% storeBeaconInfo = metrics;
+nodeId = 121;
+
+% rootBeacons = beaconsRcv(find(beaconsRcv(:, 3) == 117), :);
+% rootNBs = unique(rootBeacons(:, 1), 'rows');
+% rcv = beaconsRcv(find(beaconsRcv(:, 1) == nodeId & beaconsRcv(:, 3) == 117), :);
+store = storeBeaconInfo(find(storeBeaconInfo(:, 1) == nodeId & storeBeaconInfo(:, 3) == 117), :);
+nbTable = inTableNBs(find(inTableNBs(:, 1) == nodeId & inTableNBs(:, 3) == 117), :);
+% resultIX = find(retrvBeaconInfo(:, 1) == nodeId & retrvBeaconInfo(:, 2) == 22 & retrvBeaconInfo(:, 3) == 117);
+% retrv = retrvBeaconInfo(resultIX, :);
+
+metrics;

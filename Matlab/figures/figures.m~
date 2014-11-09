@@ -1,0 +1,747 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Author: Xiaohui Liu (whulxh@gmail.com)
+%   Date:   9/28/2011
+%   Function: prepares figures for display
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% deadline success ratio
+cd ~/Dropbox/tOR/figures/;
+% 'm' for min
+variants = {'MTA'; 'M-DS'; 'M-DB'; 'M-ST'; 'M-MD'; 'M-mDQ'; 'mDQ'; 'M-FCFS'};
+protocols = {'MTA'; 'MCMP'; 'MM'; 'MM-CD'; 'SDRCS'; 'CTP';};
+%% Deadline success ratio 
+metric = 'Deadline success ratio';
+%%
+PROTOCOL_CNTS = size(variants, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [0.92045437637412
+0.93249791918938
+0.92999275793906
+0.98483568650575
+0.90040777162498
+0.94069335571503
+0.92939276010077
+0.95235432186125
+0.96778631692596
+0.95013441753727];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-DS
+t = [
+0.40896606439988
+0.52977002305801
+0.52717192503643
+0.47062553125939
+0.50505261240502
+0.44737988551148
+0.49825985409379
+0.49681542595648
+0.41871911732251   
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-DB
+t = [
+0.4812920650988
+0.4952417668419
+0.49850425317429
+0.5214987422981
+0.50831762259799
+0.64726049107454
+0.51814314351861
+0.50474368983996
+0.46777135820379
+0.50358366755648    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-LD
+t = [
+0
+0.000478025753637
+0
+0
+0
+0
+0    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-MD
+t = [
+0.67020278036208
+0.79457516611344
+0.782275897583
+0.78180089616363
+0.63934846066075
+0.73139411243854
+0.70770115263407
+0.80428912589526
+0.78137146599782
+0.84520169055954
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-mDQ
+t = [0.75967319094663
+0.82960131073118
+0.91074736745257
+0.86156943360638
+0.78351674750754
+0.86766317067539];
+pdr{idx} = t;
+idx = idx + 1;
+
+% mDQ
+t = [
+0.81063332221382
+0.78057863845844
+0.71714929068894
+0.68974420893525
+0.70882915817295
+0.65097757500978
+0.41106879434806    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-FIFO
+t = [0.92768720555058
+0.91390722857822
+0.83627700949272
+0.89355375751529
+0.95307093025906
+0.82865039892446
+0.92646811877043
+0.96492791578733
+0.95468881791181
+0.86515471858757
+0.96665025667275
+0.79544588865153];
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp * 100, group, 'notch', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'positions', [1:0.85:4.4 5.6 ]'XTickLabel', variants, 'ytick', 0:10:100);
+%xlabel('Protocols');
+ylabel([metric ' (%)']);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'dcr_variants_medium' -eps;
+export_fig 'dcr_variants_medium' -jpg -zbuffer;
+saveas(gcf, 'dcr_variants_medium.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);
+
+%% peers
+metric = 'Deadline success ratio';
+PROTOCOL_CNTS = size(protocols, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [0.92045437637412
+0.93249791918938
+0.92999275793906
+0.98483568650575
+0.90040777162498
+0.94069335571503
+0.92939276010077
+0.95235432186125
+0.96778631692596
+0.95013441753727];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MCMP
+t = [
+0.16889714049529
+0.54522398900622
+0.19432097104256
+0.070924769716487
+0.17899439209004
+0.18723154175827    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED
+t = [
+0.08014548441029
+0.065046935975496
+0.17701471918579
+0.015594718059409
+0.027571491303231
+0.049430852060087    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED-CD
+t = [
+0.004339370598578
+0.080279472965226
+0.15262780305004
+0.066542461115263
+0.081688570023452
+0.15028620209909
+0.2422090208792    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% SDRCS
+t = [
+0.76641644464115
+0.50835025004343
+0.90309949769496
+0.61703837326583
+0.84998518102457
+0.8060243169155
+0.94038592436787
+0.86144155415761    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% CTP
+t = [0.86506277403792
+0.56343418509212
+0.39310971996767
+0.67738966040294
+0.56774643629827
+0.2584064431232
+0.42458914940141];
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp * 100, group, 'notch', 'on');
+% set(gca, 'xtick', 1:size(protocols, 1), 'XTickLabel', protocols);
+% set(gca, 'FontSize', 30, 'YGrid', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'xtick', 1:size(protocols, 1), 'XTickLabel', protocols, 'ytick', 0:10:100);
+%xlabel('Protocols');
+ylabel([metric ' (%)']);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'dcr_peers_medium' -eps;
+export_fig 'dcr_peers_medium' -jpg -zbuffer;
+saveas(gcf, 'dcr_peers_medium.fig');
+% saveas(h, 'foo.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);
+
+%% PDR
+metric = 'Packet delivery ratio';
+%% variants
+PROTOCOL_CNTS = size(variants, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [0.9219572534016
+0.93448032052793
+0.93147170701501
+0.98576328397212
+0.90402696469753
+0.94255867200916
+0.93210728429137
+0.95297922627192
+0.96939113170086
+0.95265759125986];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-DS
+t = [
+0.45705267673827
+0.58411625109717
+0.56282562059454
+0.49829003617231
+0.51781606120593
+0.46832573422655
+0.51943333658441
+0.51544181684196
+0.44774224747627    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-DB
+t = [
+0.48515742128936
+0.49850141532997
+0.50097267791295
+0.52526585004711
+0.5091891020474
+0.65194266069923
+0.51919454368301
+0.50635930047695
+0.46867924528302
+0.50651256650156    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-LD
+t = [
+0.000836843426595
+0.001434077260912
+0.000831398182392
+0.000886651603123
+0.001166610382832
+0.001088473346358
+0.001343552474885    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-MD
+t = [
+0.67456665616136
+0.79645390070922
+0.79659716342083
+0.78433162015467
+0.64524442296851
+0.74386195995785
+0.71072864321608
+0.80709752166029
+0.79697256845737
+0.8487792133764
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-mDQ
+t = [0.7617577367703
+0.83302082635773
+0.91120652922089
+0.86522831869961
+0.78390782150181
+0.86897176202294];
+pdr{idx} = t;
+idx = idx + 1;
+
+% mDQ
+t = [
+0.81107036843024
+0.78115055079559
+0.71733966745843
+0.69269880008135
+0.71908496732026
+0.65704886845547
+0.419232689747    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-FCFS
+t = [0.93045683864314
+0.91689291532108
+0.84153732865073
+0.89666415851517
+0.95463230878419
+0.83136690647482
+0.93055476366954
+0.96855794556629
+0.95766292637882
+0.86809476860566
+0.96745800360961
+0.79766136851074];
+% t = t(t >= .9);
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp * 100, group, 'notch', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'xtick', 1:size(variants, 1), 'XTickLabel', variants, 'ytick', 0:10:100);
+ylabel([metric ' (%)']);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'pdr_variants_medium' -eps;
+export_fig 'pdr_variants_medium' -jpg -zbuffer;
+saveas(gcf, 'pdr_variants_medium.fig');
+% saveas(h, 'foo.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);
+
+%% peers
+PROTOCOL_CNTS = size(protocols, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [0.9219572534016
+0.93448032052793
+0.93147170701501
+0.98576328397212
+0.90402696469753
+0.94255867200916
+0.93210728429137
+0.95297922627192
+0.96939113170086
+0.95265759125986];
+% t = t(t >= .9);
+pdr{idx} = t;
+idx = idx + 1;
+
+% MCMP
+t = [
+0.60973417233851
+0.84253149370126
+0.58083855347604
+0.53409241947632
+0.40251394390106
+0.63956834532374    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED
+t = [
+0.42108183079057
+0.35426965707446
+0.4539541560131
+0.24705014749262
+0.36750642111591
+0.30194665980619    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED-CD
+t = [
+0.52614868507758
+0.55459024209355
+0.4867926554279
+0.31075389999407
+0.52226085770778
+0.62407789908528
+0.65611394786348    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% SDRCS
+t = [
+0.81385264773599
+0.51016507957429
+0.92625675811814
+0.62922654610044
+0.91279582287923
+0.92534597026201
+0.9447640547626
+0.93678856114885    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% CTP
+t = [0.99900332225914
+0.97302253302253
+0.94791388071677
+0.99652368429008
+0.98548573313541
+0.96706187335595
+0.98881643299641];
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp * 100, group, 'notch', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'xtick', 1:size(protocols, 1), 'XTickLabel', protocols, 'ytick', 0:10:100);
+%xlabel('Protocols');
+ylabel([metric ' (%)']);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'pdr_peers_medium' -eps;
+export_fig 'pdr_peers_medium' -jpg -zbuffer;
+saveas(gcf, 'pdr_peers_medium.fig');
+% saveas(h, 'foo.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);
+
+%% NTX
+metric = 'Number of transmissions per packet delivered';
+%%
+PROTOCOL_CNTS = size(protocols, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [7.0218096723869
+7.9609709962169
+7.84640222862389
+6.09963272857814
+7.89334772370487
+7.10679257887226
+8.43937687083588
+6.73141017273637
+6.64851794959322
+7.16340523649161];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-DS
+t = [
+13.3199463627221
+13.4812444345503
+14.658589708685
+15.4787170857256
+15.3392571162887
+17.4445230066355
+15.3722010984368
+14.1555757733299
+16.6217091940057    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-DB
+t = [
+17.0773120575346
+15.8564271001503
+16.0680421931146
+15.1524268361437
+15.0315550630574
+11.5971545119889
+13.0342799949956
+13.9355049712193
+16.9371980676329
+13.8114209827357    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+
+% M-LD
+t = [
+10000
+4590.29166666667
+10000
+10000
+6151.44736842105
+4818.10256410256
+10000  
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% M-MD
+t = [
+11.2955522332274
+9.91710515664211
+10.3242650722471
+9.10496662379815
+12.1255200532535
+10.5684385735029
+10.3355605048255
+9.71749102824154
+9.43965123014542
+7.94616224081484
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-mDQ
+t = [10.6959185597135
+10.6126452027815
+8.21856115107914
+9.87185000754489
+9.91728948679621
+8.38003164679094];
+pdr{idx} = t;
+idx = idx + 1;
+
+% mDQ
+t = [13.7398277717976
+13.3726104669383
+17.2682119205298
+19.5287727539636
+16.4197418651154
+16.4943901556279
+26.5665508684864];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MTA-FCFS
+t = [7.19381702714038
+7.87382726054297
+7.5487497055161
+7.65324009324009
+6.85348278622898
+8.31083419868467
+6.9508302187366
+5.26188317942326
+6.09417367928939
+7.72725082599119
+5.8958470854978
+8.91075506445672];
+% t = t(t >= .9);
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp, group, 'notch', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'yscale', 'log', 'xtick', 1:size(variants, 1), 'XTickLabel', variants);
+ylabel(metric);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'ntx_variants_medium' -eps;
+export_fig 'ntx_variants_medium' -jpg -zbuffer;
+saveas(gcf, 'ntx_variants_medium.fig');
+% saveas(h, 'foo.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);
+
+%% peers
+PROTOCOL_CNTS = size(protocols, 1);
+pdr = cell(PROTOCOL_CNTS, 1);
+idx = 1;
+% MTA
+t = [7.0218096723869
+7.9609709962169
+7.84640222862389
+6.09963272857814
+7.89334772370487
+7.10679257887226
+8.43937687083588
+6.73141017273637
+6.64851794959322
+7.16340523649161];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MCMP
+t = [
+30.4475568660489
+14.4198647205411
+21.9574566626968
+34.2547490667773
+29.9840345416206
+18.7094310579599    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED
+t = [
+68.5309617918314
+58.3798472385429
+38.9183794466403
+99.454420206659
+69.599405204461
+68.6208463504686    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% MMSPEED-CD
+t = [
+50.2476374814984
+41.0021969624606
+46.600308812176
+72.5441878221035
+61.3389033942559
+43.5197163120567
+37.3516015400999    
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% SDRCS
+t = [
+11.0253665896553
+9.55273525802493
+7.29677700032629
+8.39165469102854
+8.83578485996583
+8.36093071584963
+7.37133387289475
+6.28613051683608
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% CTP
+t = [
+7.0514355392972
+7.80684830868496
+9.41549693164986
+8.31878298853364
+8.1667280334728
+11.0555051839003
+9.22534375309131
+];
+pdr{idx} = t;
+idx = idx + 1;
+
+% display
+data = pdr;
+group = zeros(0);
+dataDisp = zeros(0);
+for i = 1 : size(data, 1)
+    group = [group ; ones(size(data{i})) + i - 1];
+    dataDisp = [dataDisp ; data{i}];
+end
+figure('name', metric);
+% title([metric 'for different protocols']);
+h = boxplot(dataDisp, group, 'notch', 'on');
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'xtick', 1:size(protocols, 1), 'XTickLabel', protocols);
+ylabel(metric);
+%
+maximize;
+set(gcf, 'Color', 'white'); % Sets figure background
+export_fig 'ntx_peers_medium' -eps;
+export_fig 'ntx_peers_medium' -jpg -zbuffer;
+saveas(gcf, 'ntx_peers_medium.fig');
+% saveas(h, 'foo.fig');
+% xticklabel_rotate(1 : size(protocols, 1), 90, protocols);

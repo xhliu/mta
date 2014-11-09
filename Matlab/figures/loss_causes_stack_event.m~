@@ -1,0 +1,425 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Author: Xiaohui Liu (whulxh@gmail.com)
+%   Date:   9/28/2011
+%   Function: prepares figures for loss causes only for MTA and other protocols
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+traffic = 'event';
+dir = '/home/xiaohui/Dropbox/tOR/figures';
+protocols = {'MTA'; 'MCMP'; 'MM'; 'MM-CD'; 'SDRCS'; 'CTP';};
+PROTOCOL_NUM = 6;
+CAUSE_NUM = 5;
+results = zeros(PROTOCOL_NUM, CAUSE_NUM);
+row = 1;
+column = 1;
+legends = {'Success', 'Overflow', 'Tx failure', 'Rejection', 'Expiration'};
+%% MTA
+% catch ratio 
+t = [
+0.91988993926527
+0.94658297406511
+0.90075400023023
+0.96229169998263
+0.91845943170978
+0.92191590139516
+0.99035254883278   
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0
+0
+0.002354452054795
+0.000565610859729
+0
+0.001276505212396
+0    
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.085356468201217
+0.051686290161644
+0.10737728310502
+0.031548516842634
+0.096760165253316
+0.078434153606127
+0.005478799428299    
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0.006996431819772
+0.001130845473292
+0.002497146118721
+0.001194067370538
+0.012466478219903
+0.003971349549677
+0    
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% MCMP
+% catch ratio 
+t = [
+0.33760747951716
+0.22776952082903
+0.13308790125566
+0.26637908191106
+0.10242114459985
+0.15253338467193
+0.20942332492246
+0.14124795751108
+0.20636576926128
+0.24826805437132
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0.19532531108066
+0.22477496435012
+0.31609624294938
+0.2167490341226
+0.36942411200028
+0.32147392490305
+0.19538068475292
+0.24432653470554
+0.31504293381614
+0.24871916054045
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.24407456939239
+0.25818621007897
+0.33300143905037
+0.25840650614616
+0.27151293582107
+0.29896717766027
+0.23834248707949
+0.24993762836328
+0.25049103734416
+0.24465223967267
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0.002544153211555
+0.066129312085736
+0.008297977354451
+0.0309641477318
+0.020814910452233
+0.000612428496402
+0.026337982883272
+0.027445566804167
+0.020676392892942
+0.011759771183946
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% MMSPEED
+% catch ratio 
+t = [
+0.25819960894219
+0.22394715359898
+0.13757629988491
+0.24499458679177
+0.18633462051374
+0.15747594562291
+0.2182403397752
+0.18038209234836
+0.21162842743199
+0.12879023948037
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0.095512202937018
+0.11988020085263
+0.10759638688337
+0.10526421252184
+0.09663827497573
+0.14760532948243
+0.13832165271006
+0.10571986175439
+0.12443880967869
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.23605262645135
+0.27140421129671
+0.24206489045076
+0.26546544801021
+0.23036841777128
+0.21719128111257
+0.28511031653362
+0.26403048905053
+0.23320531985994
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0.069833750814576
+0.048246301720554
+0.081803471672614
+0.10549279930257
+0.10134455497868
+0.049744992353864
+0.052023270207019
+0.11474725300487
+0.078173580227024
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% MMSPEEDCD
+% catch ratio 
+t = [
+0.24936269002661
+0.002969991184999
+0.004446804116354
+0.00735455852889
+0.018246579153841
+0.30018625263813
+0.26283698270028
+0.21382371775518
+0.23032615729974
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0.086319373944826
+0.11633545237387
+0.10849418429028
+0.10961514346078
+0.092466008401376
+0.12184724669187
+0.1152210243041
+0.097233243986347
+0.11348216888543
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.27504872357953
+0.26017401769641
+0.2463423384124
+0.23353111935692
+0.27873517607058
+0.19146078770872
+0.2770513630956
+0.28761833653245
+0.26840690171333
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0.092981888729888
+0.061833514866271
+0.14398181946011
+0.10821454646968
+0.082781794550399
+0.14016907852919
+0.059942921550921
+0.10443570650385
+0.095788925253837
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% SDRCS
+% catch ratio 
+t = [
+0.69558654847021
+0.57386786913222
+0.65719984615961
+0.81697636804308
+0.4753466087188
+0.71005556157976
+0.61798412659532
+0.69881624232579
+0.67022029622658
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0.02692485674268
+0.14669666937794
+0.028015772540359
+0.009678727856423
+0.11682641412424
+0.026793421224697
+0.052032479257344
+0.062242294973428
+0.069338472751891
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.2333024957961
+0.22803278023502
+0.23640605962534
+0.14836203819076
+0.36705907512621
+0.23142903679944
+0.25531726663927
+0.22097067291018
+0.20037180708617
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0.01623818679842
+0.010937618819412
+0.023824436491014
+0.011641546792341
+0.000614067879759
+0.0037882729238
+0.027455734668855
+0.001052575450509
+0.006278680603518    
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% CTP
+% catch ratio 
+t = [
+0.71435293547248
+0.87387571914872
+0.98537216696599
+0.90912770188897
+0.7072068471761
+0.88505217070401
+0.98694252301934
+0.6794371805059
+0.92922080874367
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% overflow
+t = [
+0.07776926825872
+0.038646722732233
+0.002344736367462
+0.017256864254555
+0.063451776649746
+0.026960005086793
+0.000525885240154
+0.066230520435166
+0.022153273347813
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% air loss
+t = [
+0.000348116688714
+0
+0.000180364335959
+0
+0.000141003948111
+0
+0
+0.000294031167304
+0
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% rej
+t = [
+0
+0
+0
+0
+0
+0
+0
+0
+0
+];
+results(row, column) = mean(t);
+column = column + 1;
+
+% expire: either at on the way to sink or at sink
+results(row, end) = 1 - sum(results(row, 1 : end - 1));
+row = row + 1;
+column = 1;
+
+%% protocols
+figure;
+% title([metric 'for different protocols']);
+h = bar(results * 100, 'stack');
+set(h, 'linewidth', 2);
+set(gca, 'xtick', 1:size(protocols, 1), 'XTickLabel', protocols);
+set(gca, 'FontSize', 30, 'YGrid', 'on', 'ytick', 0:10:100);
+legend(legends);
+ylabel('Ratio (%)');
+ylim([0 100]);
+%%
+maximize;
+set(gcf, 'Color', 'white');
+cd(dir);
+str = ['protocol_components_' traffic];
+export_fig(str, '-eps');
+export_fig(str, '-jpg', '-zbuffer');
+saveas(gcf, [str '.fig']);
